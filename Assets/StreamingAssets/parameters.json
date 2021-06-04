@@ -1,0 +1,7 @@
+{
+    "countOfTargets": 30,
+    "radius": 20.0,
+    "minDistance": 5.0,
+    "rotateSpeed": 2.0,
+    "howManySecondAddToTimer": 10.0
+}

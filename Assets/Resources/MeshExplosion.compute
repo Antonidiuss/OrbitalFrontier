@@ -1,0 +1,58 @@
+﻿// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel CSMain
+
+// Create a RenderTexture with enableRandomWrite flag and set it
+// with cs.SetTexture
+
+//struct of point
+struct Vertex {
+	float3 position;
+	float3 normal;
+};
+
+//pseudo-random function
+float rand(float co) {
+	return frac(sin(co + 39.6782) * 43758.5453);
+}
+
+//buffers
+RWStructuredBuffer<Vertex>  vertexBuffer; //need to write
+StructuredBuffer<Vertex>    initialBuffer; //need only to read
+
+
+float timeStamp; //date of start
+float delta; //time now for delta btw now and start
+float radius; 
+float bias; //how much deform
+
+[numthreads(1,1,1)]
+void CSMain (uint3 id : SV_DispatchThreadID)
+{
+	//setting initial vectors
+	float3 initialPos = initialBuffer[id.x].position;
+	float3 initialNormal = initialBuffer[id.x].normal;
+	
+
+	//reverse cause of mirroring target
+	float3 initialPosReversed =  - initialPos;
+	float3 initialNormalReversed =  - initialNormal;
+
+	//to make animation of explosion more realistic faster at start and slower at end
+	float timeMoment = 1 - 1 / (delta - timeStamp + 1);
+
+	//find out which triangle point belongs to and made equal bias 
+	float triangleId = floor(id.x / 3);
+	float3 triBias = float3 (rand(triangleId - 1 + timeStamp), rand(triangleId + timeStamp), rand(triangleId + 1 + timeStamp));
+
+	//s - targeted point without bias. Without bias it will be just simple sphere with new radius.
+	float3 s = float3(normalize(initialPosReversed) * radius); 
+	float3 pos = lerp(initialPosReversed, s+ triBias*bias, timeMoment);
+
+	float3 snormal = normalize(initialNormalReversed); //perpendicular for spere is just normal outro from center and that goes through point
+	float3 norm = lerp(initialNormalReversed, snormal, timeMoment);
+
+
+	//writing to buffers
+	vertexBuffer[id.x].position = pos; 
+	vertexBuffer[id.x].normal = norm;
+}
